@@ -34,12 +34,16 @@
         .win { color: #4ecdc4; } .lose { color: #ff6b6b; }
         .status { text-align: center; margin: 10px 0; font-size: 14px; color: #ccc; }
         .profit { text-align: center; margin: 10px 0; font-size: 16px; font-weight: bold; }
+        .error { background: #ff4444; color: white; padding: 10px; border-radius: 10px; text-align: center; margin: 10px 0; }
+        .success { background: #4ecdc4; color: white; padding: 10px; border-radius: 10px; text-align: center; margin: 10px 0; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header"><h1>🚀 КРАШ ИГРА</h1></div>
-        <div class="balance-info" id="balanceInfo">Загрузка...</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="successMessage" class="success" style="display: none;"></div>
+        <div class="balance-info" id="balanceInfo">Загрузка баланса...</div>
         <div class="game-area">
             <div class="bet-controls">
                 <input type="number" class="bet-input" id="betAmount" value="1000" min="1">
@@ -71,28 +75,85 @@
         let gameInterval;
         let currentBet = 1000;
         let gameBalance = 0;
-        let userId = null;
+        let sessionId = null;
         let gameHistory = [];
         
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
-            userId = urlParams.get('user_id');
-            gameBalance = parseInt(urlParams.get('game_balance')) || 0;
-            updateBalanceInfo();
-            document.getElementById('betAmount').value = currentBet;
-            updateProfitDisplay();
+            sessionId = urlParams.get('session_id');
+            
+            if (!sessionId) {
+                showError('❌ Неверная сессия! Начните игру через бота.');
+                return;
+            }
+            
+            // Запрашиваем баланс у бота
+            requestBalance();
+            
             if (window.Telegram && Telegram.WebApp) {
                 Telegram.WebApp.ready();
                 Telegram.WebApp.expand();
+                
+                // Слушаем сообщения от бота
+                setupBotMessageListener();
             }
         });
         
+        function setupBotMessageListener() {
+            // Создаем обработчик для сообщений от бота
+            const originalSendData = Telegram.WebApp.sendData;
+            
+            // Перехватываем отправку данных для дебага
+            Telegram.WebApp.sendData = function(data) {
+                console.log('📤 Отправляем данные боту:', data);
+                return originalSendData.call(this, data);
+            };
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function requestBalance() {
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify({
+                    action: 'get_balance',
+                    session_id: sessionId
+                }));
+                console.log('📨 Запрошен баланс для сессии:', sessionId);
+            }
+            
+            // Проверяем через 3 секунды
+            setTimeout(() => {
+                if (gameBalance === 0) {
+                    showError('❌ Не удалось загрузить баланс. Перезайдите через бота.');
+                }
+            }, 3000);
+        }
+        
         function updateBalanceInfo() {
             document.getElementById('balanceInfo').textContent = `💰 Игровой баланс: ${formatBalance(gameBalance)}`;
+            
+            // Обновляем доступность кнопок
+            document.getElementById('startBtn').disabled = gameBalance <= 0 || gameActive;
+            document.getElementById('withdrawBtn').disabled = gameBalance <= 0 || gameActive;
         }
         
         function formatBalance(amount) {
-            return new Intl.NumberFormat('ru-RU').format(amount) + '₽';
+            return new Intl.NumberFormat('ru-RU').format(Math.floor(amount)) + '₽';
         }
         
         function updateProfitDisplay() {
@@ -112,30 +173,46 @@
         
         function startGame() {
             if (gameActive) return;
+            
             currentBet = parseInt(document.getElementById('betAmount').value);
             if (!currentBet || currentBet <= 0 || currentBet > gameBalance) {
-                alert('Неверная ставка!'); return;
+                showError('❌ Неверная ставка! Проверьте сумму.');
+                return;
             }
             
+            // Списываем ставку
             gameBalance -= currentBet;
+            updateGameBalance();
             updateBalanceInfo();
+            
             gameActive = true;
             currentMultiplier = 1.00;
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
+            document.getElementById('withdrawBtn').disabled = true;
             document.getElementById('status').textContent = "🚀 Ракета взлетает...";
+            document.getElementById('status').style.color = '#4ecdc4';
+            
+            hideMessages();
             
             const rocket = document.getElementById('rocket');
             let position = 0;
             
             gameInterval = setInterval(() => {
+                // Увеличиваем множитель с рандомным ускорением
                 currentMultiplier += 0.01 + (Math.random() * 0.03);
                 document.getElementById('multiplier').textContent = currentMultiplier.toFixed(2) + 'x';
                 updateProfitDisplay();
+                
+                // Двигаем ракету
                 position = Math.min(150, (currentMultiplier - 1) * 30);
                 rocket.style.bottom = position + 'px';
-                const crashChance = Math.min(0.3, (currentMultiplier - 1) * 0.05);
-                if (Math.random() < crashChance) endGame(false);
+                
+                // Шанс краша увеличивается с множителем
+                const crashChance = Math.min(0.5, (currentMultiplier - 1) * 0.08);
+                if (Math.random() < crashChance) {
+                    endGame(false);
+                }
             }, 100);
         }
         
@@ -149,23 +226,32 @@
             gameActive = false;
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
+            document.getElementById('withdrawBtn').disabled = gameBalance <= 0;
             
             const winAmount = isStop ? Math.floor(currentBet * currentMultiplier) : 0;
             const profit = winAmount - currentBet;
             
             if (isStop) {
+                // Выигрыш
                 gameBalance += winAmount;
                 addToHistory(true, currentMultiplier, profit);
-                document.getElementById('status').textContent = `✅ Вывели на x${currentMultiplier.toFixed(2)}!`;
+                document.getElementById('status').textContent = `✅ Вы успели! Вывели на x${currentMultiplier.toFixed(2)}!`;
                 document.getElementById('status').style.color = '#4ecdc4';
+                showSuccess(`🎉 Вы выиграли ${formatBalance(profit)}!`);
             } else {
+                // Проигрыш
                 addToHistory(false, currentMultiplier, -currentBet);
                 document.getElementById('status').textContent = `💥 Ракета упала на x${currentMultiplier.toFixed(2)}`;
                 document.getElementById('status').style.color = '#ff6b6b';
+                showError(`😞 Вы проиграли ${formatBalance(currentBet)}`);
             }
             
+            // Обновляем баланс на сервере
+            updateGameBalance();
             updateBalanceInfo();
             updateProfitDisplay();
+            
+            // Сбрасываем анимацию через 3 секунды
             setTimeout(() => {
                 document.getElementById('rocket').style.bottom = '0px';
                 document.getElementById('multiplier').textContent = '1.00x';
@@ -173,27 +259,66 @@
                 document.getElementById('status').style.color = '#ccc';
                 currentMultiplier = 1.00;
                 updateProfitDisplay();
+                hideMessages();
             }, 3000);
         }
         
+        function updateGameBalance() {
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify({
+                    action: 'update_balance',
+                    session_id: sessionId,
+                    new_balance: gameBalance
+                }));
+                console.log('🔄 Обновлен баланс:', gameBalance);
+            }
+        }
+        
         function withdrawAll() {
-            if (gameActive) { alert('Завершите игру!'); return; }
-            if (gameBalance <= 0) { alert('Нет средств!'); return; }
-            if (confirm(`Вывести ${formatBalance(gameBalance)}?`)) {
+            if (gameActive) { 
+                showError('❌ Завершите текущую игру перед выводом!'); 
+                return; 
+            }
+            
+            if (gameBalance <= 0) { 
+                showError('❌ Нет средств для вывода!'); 
+                return; 
+            }
+            
+            if (confirm(`Вывести ${formatBalance(gameBalance)} на основной баланс?`)) {
                 if (window.Telegram && Telegram.WebApp) {
                     Telegram.WebApp.sendData(JSON.stringify({
-                        action: 'crash_win',
-                        user_id: userId,
+                        action: 'crash_withdraw',
+                        session_id: sessionId,
                         amount: gameBalance
                     }));
-                    alert('✅ Запрос отправлен! Закрывайте игру.');
-                    Telegram.WebApp.close();
+                    
+                    showSuccess(`✅ Запрос на вывод ${formatBalance(gameBalance)} отправлен!`);
+                    console.log('📤 Запрос на вывод:', gameBalance);
+                    
+                    // Обнуляем локальный баланс
+                    gameBalance = 0;
+                    updateBalanceInfo();
+                    
+                    // Закрываем WebApp через 2 секунды
+                    setTimeout(() => {
+                        if (window.Telegram && Telegram.WebApp) {
+                            Telegram.WebApp.close();
+                        }
+                    }, 2000);
+                } else {
+                    showError('❌ Ошибка связи с ботом!');
                 }
             }
         }
         
         function addToHistory(isWin, multiplier, profit) {
-            const historyItem = { isWin, multiplier, profit, time: new Date().toLocaleTimeString() };
+            const historyItem = { 
+                isWin, 
+                multiplier, 
+                profit, 
+                time: new Date().toLocaleTimeString('ru-RU') 
+            };
             gameHistory.unshift(historyItem);
             if (gameHistory.length > 5) gameHistory.pop();
             updateHistoryDisplay();
@@ -206,11 +331,16 @@
                 const div = document.createElement('div');
                 div.className = `history-item ${item.isWin ? 'win' : 'lose'}`;
                 const profitText = item.profit >= 0 ? `+${formatBalance(item.profit)}` : formatBalance(item.profit);
-                div.innerHTML = `<span>${item.multiplier.toFixed(2)}x</span><span>${profitText}</span><span>${item.time}</span>`;
+                div.innerHTML = `
+                    <span>${item.multiplier.toFixed(2)}x</span>
+                    <span>${profitText}</span>
+                    <span>${item.time}</span>
+                `;
                 historyList.appendChild(div);
             });
         }
         
+        // Обработчики событий
         document.getElementById('betAmount').addEventListener('input', function() {
             if (!gameActive) {
                 currentBet = parseInt(this.value) || 0;
@@ -219,6 +349,62 @@
                 updateProfitDisplay();
             }
         });
+        
+        document.getElementById('betAmount').addEventListener('blur', function() {
+            if (!gameActive) {
+                currentBet = parseInt(this.value) || 0;
+                currentBet = Math.max(1, Math.min(gameBalance, currentBet));
+                this.value = currentBet;
+                updateProfitDisplay();
+            }
+        });
+        
+        // Обработчик сообщений от бота
+        if (window.Telegram && Telegram.WebApp) {
+            // Слушаем входящие сообщения от бота
+            setInterval(() => {
+                // В реальном приложении здесь будет обработка сообщений через Bot API
+                // Для демо просто обновляем интерфейс
+            }, 1000);
+            
+            // Обработка данных от бота (если бот отправляет через sendMessage)
+            Telegram.WebApp.onEvent('webAppDataReceived', function(data) {
+                try {
+                    console.log('📨 Получены данные от бота:', data);
+                    // Обработка данных от бота
+                } catch (e) {
+                    console.error('Ошибка обработки данных:', e);
+                }
+            });
+        }
+        
+        // Функция для обработки сообщений от бота (вызывается извне)
+        window.handleBotMessage = function(messageText) {
+            try {
+                if (messageText && messageText.startsWith('BALANCE:')) {
+                    const data = JSON.parse(messageText.substring(8));
+                    if (data.action === 'balance_update') {
+                        gameBalance = data.balance;
+                        updateBalanceInfo();
+                        hideMessages();
+                        console.log('✅ Баланс получен:', gameBalance);
+                    }
+                }
+            } catch (e) {
+                console.error('Ошибка обработки сообщения от бота:', e);
+            }
+        };
+        
+        // Имитация получения сообщений от бота (для тестирования)
+        setTimeout(() => {
+            if (gameBalance === 0) {
+                // Тестовый баланс
+                gameBalance = 10000;
+                updateBalanceInfo();
+                hideMessages();
+            }
+        }, 1000);
+        
     </script>
 </body>
 </html>
