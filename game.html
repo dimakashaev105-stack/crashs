@@ -30,7 +30,7 @@
             margin-bottom: 20px;
         }
         
-        .balance {
+        .bet-info {
             background: rgba(255,255,255,0.1);
             padding: 15px;
             border-radius: 15px;
@@ -52,6 +52,9 @@
             position: relative;
             height: 200px;
             margin: 20px 0;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
         }
         
         .rocket {
@@ -115,28 +118,18 @@
             margin-bottom: 15px;
         }
         
-        input, button {
-            padding: 12px;
+        button {
+            padding: 15px;
             border: none;
             border-radius: 10px;
             font-size: 16px;
-        }
-        
-        input {
-            flex: 1;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        
-        button {
             flex: 1;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
         }
         
-        .bet-btn {
+        .start-btn {
             background: linear-gradient(45deg, #4ecdc4, #44a08d);
             color: white;
         }
@@ -177,6 +170,13 @@
         .lose {
             color: #ff6b6b;
         }
+        
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -185,8 +185,8 @@
             <h1>🚀 КРАШ ИГРА</h1>
         </div>
         
-        <div class="balance" id="balance">
-            Баланс: загрузка...
+        <div class="bet-info" id="betInfo">
+            Загрузка...
         </div>
         
         <div class="game-area">
@@ -198,9 +198,12 @@
                 1.00x
             </div>
             
+            <div class="status" id="status">
+                Нажмите СТАРТ чтобы начать
+            </div>
+            
             <div class="controls">
-                <input type="number" id="betAmount" placeholder="Сумма ставки" value="1000" min="1">
-                <button class="bet-btn" onclick="placeBet()" id="betBtn">СТАРТ</button>
+                <button class="start-btn" onclick="startGame()" id="startBtn">СТАРТ</button>
                 <button class="cashout-btn" onclick="cashOut()" id="cashoutBtn" disabled>ВЫВЕСТИ</button>
             </div>
         </div>
@@ -217,7 +220,6 @@
         let currentMultiplier = 1.00;
         let gameInterval;
         let betAmount = 0;
-        let userBalance = 0;
         let userId = null;
         let gameHistory = [];
         
@@ -226,10 +228,10 @@
             // Получаем параметры из URL
             const urlParams = new URLSearchParams(window.location.search);
             userId = urlParams.get('user_id');
-            userBalance = parseInt(urlParams.get('balance')) || 0;
+            betAmount = parseInt(urlParams.get('bet_amount')) || 0;
             
             // Обновляем интерфейс
-            updateBalanceDisplay();
+            updateBetInfo();
             
             // Инициализируем Telegram Web App
             if (window.Telegram && Telegram.WebApp) {
@@ -238,47 +240,24 @@
             }
         });
         
-        function updateBalanceDisplay() {
-            document.getElementById('balance').textContent = `Баланс: ${formatBalance(userBalance)}`;
+        function updateBetInfo() {
+            document.getElementById('betInfo').textContent = `💰 Ставка: ${formatBalance(betAmount)}`;
         }
         
         function formatBalance(amount) {
             return new Intl.NumberFormat('ru-RU').format(amount) + '₽';
         }
         
-        function placeBet() {
+        function startGame() {
             if (gameActive) return;
             
-            betAmount = parseInt(document.getElementById('betAmount').value);
-            if (!betAmount || betAmount <= 0) {
-                alert('Введите корректную сумму ставки!');
-                return;
-            }
-            
-            if (betAmount > userBalance) {
-                alert('Недостаточно средств на балансе!');
-                return;
-            }
-            
-            // Блокируем кнопки
-            document.getElementById('betBtn').disabled = true;
-            document.getElementById('cashoutBtn').disabled = false;
-            
-            // Отправляем данные боту (если нужно списать средства)
-            if (window.Telegram && Telegram.WebApp) {
-                Telegram.WebApp.sendData(JSON.stringify({
-                    action: 'crash_bet',
-                    user_id: userId,
-                    amount: betAmount
-                }));
-            }
-            
-            startGame();
-        }
-        
-        function startGame() {
             gameActive = true;
             currentMultiplier = 1.00;
+            
+            // Блокируем кнопки
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('cashoutBtn').disabled = false;
+            document.getElementById('status').textContent = "🚀 Ракета взлетает...";
             
             // Анимация ракеты
             const rocket = document.getElementById('rocket');
@@ -314,7 +293,7 @@
             gameActive = false;
             
             // Разблокируем кнопки
-            document.getElementById('betBtn').disabled = false;
+            document.getElementById('startBtn').disabled = false;
             document.getElementById('cashoutBtn').disabled = true;
             
             const winAmount = isCashout ? Math.floor(betAmount * currentMultiplier) : 0;
@@ -322,21 +301,30 @@
             // Добавляем в историю
             addToHistory(isCashout, currentMultiplier, winAmount);
             
-            // Отправляем результат боту
-            if (window.Telegram && Telegram.WebApp) {
-                Telegram.WebApp.sendData(JSON.stringify({
-                    action: isCashout ? 'crash_win' : 'crash_lose',
-                    user_id: userId,
-                    amount: winAmount,
-                    multiplier: currentMultiplier.toFixed(2)
-                }));
+            if (isCashout && winAmount > 0) {
+                // Отправляем выигрыш боту
+                if (window.Telegram && Telegram.WebApp) {
+                    Telegram.WebApp.sendData(JSON.stringify({
+                        action: 'crash_win',
+                        user_id: userId,
+                        amount: winAmount,
+                        multiplier: currentMultiplier.toFixed(2)
+                    }));
+                }
+                document.getElementById('status').textContent = `✅ Вывели на x${currentMultiplier.toFixed(2)}!`;
+                document.getElementById('status').style.color = '#4ecdc4';
+            } else {
+                document.getElementById('status').textContent = `💥 Ракета упала на x${currentMultiplier.toFixed(2)}`;
+                document.getElementById('status').style.color = '#ff6b6b';
             }
             
             // Сбрасываем ракету
             setTimeout(() => {
                 document.getElementById('rocket').style.bottom = '0px';
                 document.getElementById('multiplier').textContent = '1.00x';
-            }, 2000);
+                document.getElementById('status').textContent = 'Нажмите СТАРТ чтобы начать';
+                document.getElementById('status').style.color = '#ccc';
+            }, 3000);
         }
         
         function addToHistory(isWin, multiplier, amount) {
