@@ -6,256 +6,59 @@
     <title>Краш Игра</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: white;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .balance-info {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 18px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .game-area {
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .bet-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .bet-input {
-            flex: 2;
-            padding: 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            text-align: center;
-        }
-        
-        .bet-buttons {
-            display: flex;
-            gap: 5px;
-            flex: 1;
-        }
-        
-        .bet-btn {
-            padding: 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 10px;
-            color: white;
-            cursor: pointer;
-            flex: 1;
-            font-size: 12px;
-        }
-        
-        .rocket-container {
-            position: relative;
-            height: 200px;
-            margin: 20px 0;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .rocket {
-            width: 50px;
-            height: 80px;
-            background: linear-gradient(45deg, #ff6b6b, #ffa726);
-            border-radius: 10px 10px 5px 5px;
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            transition: bottom 0.1s linear;
-        }
-        
-        .rocket::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 10px;
-            width: 30px;
-            height: 15px;
-            background: #ffa726;
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-        }
-
-        .rocket::before {
-            content: '';
-            position: absolute;
-            bottom: -25px;
-            left: 5px;
-            width: 40px;
-            height: 20px;
-            background: linear-gradient(to top, #ff9500, #ff0000, transparent);
-            border-radius: 50%;
-            animation: flame 0.3s infinite alternate;
-        }
-
-        @keyframes flame {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.2); opacity: 1; }
-        }
-        
-        .multiplier {
-            font-size: 32px;
-            font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
-            color: #4ecdc4;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        button {
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            flex: 1;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        .start-btn {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            color: white;
-        }
-        
-        .stop-btn {
-            background: linear-gradient(45deg, #ff6b6b, #ffa726);
-            color: white;
-        }
-        
-        .withdraw-btn {
-            background: linear-gradient(45deg, #ffd700, #ff6b00);
-            color: white;
-        }
-        
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .history {
-            margin-top: 20px;
-        }
-        
-        .history-title {
-            text-align: center;
-            margin-bottom: 10px;
-            color: #ccc;
-        }
-        
-        .history-item {
-            background: rgba(255,255,255,0.05);
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .win { color: #4ecdc4; }
-        .lose { color: #ff6b6b; }
-        
-        .status {
-            text-align: center;
-            margin: 10px 0;
-            font-size: 14px;
-            color: #ccc;
-        }
-        
-        .profit {
-            text-align: center;
-            margin: 10px 0;
-            font-size: 16px;
-            font-weight: bold;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #1a1a2e; color: white; min-height: 100vh; padding: 20px; }
+        .container { max-width: 400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .balance-info { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; font-size: 18px; }
+        .game-area { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+        .bet-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .bet-input { flex: 2; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; color: white; font-size: 16px; text-align: center; }
+        .bet-buttons { display: flex; gap: 5px; flex: 1; }
+        .bet-btn { padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; color: white; cursor: pointer; flex: 1; font-size: 12px; }
+        .rocket-container { position: relative; height: 200px; margin: 20px 0; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; }
+        .rocket { width: 50px; height: 80px; background: linear-gradient(45deg, #ff6b6b, #ffa726); border-radius: 10px 10px 5px 5px; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: bottom 0.1s linear; }
+        .rocket::after { content: ''; position: absolute; bottom: -15px; left: 10px; width: 30px; height: 15px; background: #ffa726; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+        .rocket::before { content: ''; position: absolute; bottom: -25px; left: 5px; width: 40px; height: 20px; background: linear-gradient(to top, #ff9500, #ff0000, transparent); border-radius: 50%; animation: flame 0.3s infinite alternate; }
+        @keyframes flame { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.2); opacity: 1; } }
+        .multiplier { font-size: 32px; font-weight: bold; text-align: center; margin: 20px 0; color: #4ecdc4; }
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        button { padding: 15px; border: none; border-radius: 10px; font-size: 16px; flex: 1; cursor: pointer; font-weight: bold; }
+        .start-btn { background: linear-gradient(45deg, #4ecdc4, #44a08d); color: white; }
+        .stop-btn { background: linear-gradient(45deg, #ff6b6b, #ffa726); color: white; }
+        .withdraw-btn { background: linear-gradient(45deg, #ffd700, #ff6b00); color: white; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .history { margin-top: 20px; }
+        .history-title { text-align: center; margin-bottom: 10px; color: #ccc; }
+        .history-item { background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; }
+        .win { color: #4ecdc4; } .lose { color: #ff6b6b; }
+        .status { text-align: center; margin: 10px 0; font-size: 14px; color: #ccc; }
+        .profit { text-align: center; margin: 10px 0; font-size: 16px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚀 КРАШ ИГРА</h1>
-        </div>
-        
-        <div class="balance-info" id="balanceInfo">
-            Загрузка...
-        </div>
-        
+        <div class="header"><h1>🚀 КРАШ ИГРА</h1></div>
+        <div class="balance-info" id="balanceInfo">Загрузка...</div>
         <div class="game-area">
             <div class="bet-controls">
-                <input type="number" class="bet-input" id="betAmount" value="1000" min="1" max="1000000000">
+                <input type="number" class="bet-input" id="betAmount" value="1000" min="1">
                 <div class="bet-buttons">
                     <button class="bet-btn" onclick="setBetPercent(0.25)">25%</button>
                     <button class="bet-btn" onclick="setBetPercent(0.5)">50%</button>
                     <button class="bet-btn" onclick="setBetPercent(1)">MAX</button>
                 </div>
             </div>
-            
-            <div class="rocket-container">
-                <div class="rocket" id="rocket"></div>
-            </div>
-            
-            <div class="multiplier" id="multiplier">
-                1.00x
-            </div>
-            
-            <div class="profit" id="profitDisplay">
-                Прибыль: +0₽
-            </div>
-            
-            <div class="status" id="status">
-                Установите ставку и нажмите СТАРТ
-            </div>
-            
+            <div class="rocket-container"><div class="rocket" id="rocket"></div></div>
+            <div class="multiplier" id="multiplier">1.00x</div>
+            <div class="profit" id="profitDisplay">Прибыль: +0₽</div>
+            <div class="status" id="status">Установите ставку и нажмите СТАРТ</div>
             <div class="controls">
                 <button class="start-btn" onclick="startGame()" id="startBtn">СТАРТ</button>
                 <button class="stop-btn" onclick="stopGame()" id="stopBtn" disabled>СТОП</button>
                 <button class="withdraw-btn" onclick="withdrawAll()" id="withdrawBtn">ВЫВОД</button>
             </div>
         </div>
-        
         <div class="history">
             <div class="history-title">Последние игры:</div>
             <div id="historyList"></div>
@@ -263,7 +66,6 @@
     </div>
 
     <script>
-        // Глобальные переменные игры
         let gameActive = false;
         let currentMultiplier = 1.00;
         let gameInterval;
@@ -271,18 +73,14 @@
         let gameBalance = 0;
         let userId = null;
         let gameHistory = [];
-        let potentialProfit = 0;
         
-        // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             userId = urlParams.get('user_id');
             gameBalance = parseInt(urlParams.get('game_balance')) || 0;
-            
             updateBalanceInfo();
             document.getElementById('betAmount').value = currentBet;
             updateProfitDisplay();
-            
             if (window.Telegram && Telegram.WebApp) {
                 Telegram.WebApp.ready();
                 Telegram.WebApp.expand();
@@ -290,8 +88,7 @@
         });
         
         function updateBalanceInfo() {
-            document.getElementById('balanceInfo').textContent = 
-                `💰 Игровой баланс: ${formatBalance(gameBalance)}`;
+            document.getElementById('balanceInfo').textContent = `💰 Игровой баланс: ${formatBalance(gameBalance)}`;
         }
         
         function formatBalance(amount) {
@@ -299,7 +96,7 @@
         }
         
         function updateProfitDisplay() {
-            potentialProfit = Math.floor(currentBet * currentMultiplier) - currentBet;
+            const potentialProfit = Math.floor(currentBet * currentMultiplier) - currentBet;
             const profitText = potentialProfit >= 0 ? `+${formatBalance(potentialProfit)}` : formatBalance(potentialProfit);
             document.getElementById('profitDisplay').textContent = `Прибыль: ${profitText}`;
             document.getElementById('profitDisplay').style.color = potentialProfit >= 0 ? '#4ecdc4' : '#ff6b6b';
@@ -307,7 +104,6 @@
         
         function setBetPercent(percent) {
             if (gameActive) return;
-            
             currentBet = Math.floor(gameBalance * percent);
             currentBet = Math.max(1, Math.min(gameBalance, currentBet));
             document.getElementById('betAmount').value = currentBet;
@@ -316,25 +112,15 @@
         
         function startGame() {
             if (gameActive) return;
-            
             currentBet = parseInt(document.getElementById('betAmount').value);
-            if (!currentBet || currentBet <= 0) {
-                alert('Установите корректную ставку!');
-                return;
+            if (!currentBet || currentBet <= 0 || currentBet > gameBalance) {
+                alert('Неверная ставка!'); return;
             }
             
-            if (currentBet > gameBalance) {
-                alert('Недостаточно игрового баланса!');
-                return;
-            }
-            
-            // Сразу списываем ставку с баланса
             gameBalance -= currentBet;
             updateBalanceInfo();
-            
             gameActive = true;
             currentMultiplier = 1.00;
-            
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
             document.getElementById('status').textContent = "🚀 Ракета взлетает...";
@@ -346,15 +132,10 @@
                 currentMultiplier += 0.01 + (Math.random() * 0.03);
                 document.getElementById('multiplier').textContent = currentMultiplier.toFixed(2) + 'x';
                 updateProfitDisplay();
-                
                 position = Math.min(150, (currentMultiplier - 1) * 30);
                 rocket.style.bottom = position + 'px';
-                
                 const crashChance = Math.min(0.3, (currentMultiplier - 1) * 0.05);
-                if (Math.random() < crashChance) {
-                    endGame(false);
-                }
-                
+                if (Math.random() < crashChance) endGame(false);
             }, 100);
         }
         
@@ -366,7 +147,6 @@
         function endGame(isStop) {
             clearInterval(gameInterval);
             gameActive = false;
-            
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
             
@@ -374,13 +154,11 @@
             const profit = winAmount - currentBet;
             
             if (isStop) {
-                // Выигрыш - зачисляем выигрыш на баланс
                 gameBalance += winAmount;
                 addToHistory(true, currentMultiplier, profit);
                 document.getElementById('status').textContent = `✅ Вывели на x${currentMultiplier.toFixed(2)}!`;
                 document.getElementById('status').style.color = '#4ecdc4';
             } else {
-                // Проигрыш - ставка уже списана, ничего не зачисляем
                 addToHistory(false, currentMultiplier, -currentBet);
                 document.getElementById('status').textContent = `💥 Ракета упала на x${currentMultiplier.toFixed(2)}`;
                 document.getElementById('status').style.color = '#ff6b6b';
@@ -388,7 +166,6 @@
             
             updateBalanceInfo();
             updateProfitDisplay();
-            
             setTimeout(() => {
                 document.getElementById('rocket').style.bottom = '0px';
                 document.getElementById('multiplier').textContent = '1.00x';
@@ -400,39 +177,23 @@
         }
         
         function withdrawAll() {
-            if (gameActive) {
-                alert('Завершите текущую игру перед выводом!');
-                return;
-            }
-            
-            if (gameBalance <= 0) {
-                alert('Нет средств для вывода!');
-                return;
-            }
-            
-            if (confirm(`Вывести весь игровой баланс: ${formatBalance(gameBalance)}?`)) {
+            if (gameActive) { alert('Завершите игру!'); return; }
+            if (gameBalance <= 0) { alert('Нет средств!'); return; }
+            if (confirm(`Вывести ${formatBalance(gameBalance)}?`)) {
                 if (window.Telegram && Telegram.WebApp) {
                     Telegram.WebApp.sendData(JSON.stringify({
-                        action: 'crash_withdraw',
+                        action: 'crash_win',
                         user_id: userId,
                         amount: gameBalance
                     }));
+                    alert('✅ Запрос отправлен! Закрывайте игру.');
+                    Telegram.WebApp.close();
                 }
-                
-                alert(`✅ Запрос на вывод отправлен! Получите ключ в боте.`);
-                gameBalance = 0;
-                updateBalanceInfo();
             }
         }
         
         function addToHistory(isWin, multiplier, profit) {
-            const historyItem = {
-                isWin: isWin,
-                multiplier: multiplier,
-                profit: profit,
-                time: new Date().toLocaleTimeString()
-            };
-            
+            const historyItem = { isWin, multiplier, profit, time: new Date().toLocaleTimeString() };
             gameHistory.unshift(historyItem);
             if (gameHistory.length > 5) gameHistory.pop();
             updateHistoryDisplay();
@@ -441,21 +202,15 @@
         function updateHistoryDisplay() {
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = '';
-            
             gameHistory.forEach(item => {
                 const div = document.createElement('div');
                 div.className = `history-item ${item.isWin ? 'win' : 'lose'}`;
                 const profitText = item.profit >= 0 ? `+${formatBalance(item.profit)}` : formatBalance(item.profit);
-                div.innerHTML = `
-                    <span>${item.multiplier.toFixed(2)}x</span>
-                    <span>${profitText}</span>
-                    <span>${item.time}</span>
-                `;
+                div.innerHTML = `<span>${item.multiplier.toFixed(2)}x</span><span>${profitText}</span><span>${item.time}</span>`;
                 historyList.appendChild(div);
             });
         }
         
-        // Обновление ставки при ручном вводе
         document.getElementById('betAmount').addEventListener('input', function() {
             if (!gameActive) {
                 currentBet = parseInt(this.value) || 0;
