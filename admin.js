@@ -1,5 +1,5 @@
 // Конфигурация
-const ADMIN_PASSWORD = "adminPassword"; // Смени на свой пароль
+const ADMIN_PASSWORD = "admin"; // Тот же пароль что и в script.js
 let currentAdmin = null;
 
 // Инициализация
@@ -19,7 +19,7 @@ function checkAdminAuth() {
     document.getElementById('adminStatus').textContent = `Админ: ${currentAdmin.name}`;
 }
 
-// Вход админа
+// Вход админа (для админки)
 function loginAdmin() {
     const password = document.getElementById('adminPassword').value;
     
@@ -32,7 +32,7 @@ function loginAdmin() {
         localStorage.setItem('adminAuth', JSON.stringify(adminData));
         window.location.href = 'admin.html';
     } else {
-        alert('Неверный пароль!');
+        alert('Неверный пароль! Попробуйте: admin');
     }
 }
 
@@ -379,7 +379,9 @@ function getTransactionTypeText(type) {
         'withdrawal': '📤 Вывод',
         'game': '🎮 Игра',
         'withdrawal_approved': '✅ Вывод одобрен',
-        'withdrawal_rejected': '❌ Вывод отклонен'
+        'withdrawal_rejected': '❌ Вывод отклонен',
+        'game_win': '🎯 Выигрыш',
+        'game_loss': '💸 Проигрыш'
     };
     return types[type] || type;
 }
@@ -401,14 +403,26 @@ function recordTransaction(userId, type, amount, description) {
 
 // Загрузка статистики игр
 function loadGameStats() {
-    // Здесь можно добавить сбор статистики по играм
-    const totalBets = JSON.parse(localStorage.getItem('totalBets') || '0');
-    const totalWins = JSON.parse(localStorage.getItem('totalWins') || '0');
-    const houseProfit = JSON.parse(localStorage.getItem('houseProfit') || '0');
+    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
     
-    document.getElementById('totalBets').textContent = parseInt(totalBets).toLocaleString();
-    document.getElementById('totalWins').textContent = parseInt(totalWins).toLocaleString();
-    document.getElementById('houseProfit').textContent = parseInt(houseProfit).toLocaleString() + '₽';
+    // Считаем статистику
+    let totalBets = 0;
+    let totalWins = 0;
+    let houseProfit = 0;
+    
+    transactions.forEach(transaction => {
+        if (transaction.type === 'game_loss') {
+            totalBets += Math.abs(transaction.amount);
+            houseProfit += Math.abs(transaction.amount);
+        } else if (transaction.type === 'game_win') {
+            totalWins++;
+            houseProfit -= transaction.amount;
+        }
+    });
+    
+    document.getElementById('totalBets').textContent = totalBets.toLocaleString();
+    document.getElementById('totalWins').textContent = totalWins.toLocaleString();
+    document.getElementById('houseProfit').textContent = houseProfit.toLocaleString() + '₽';
 }
 
 // Обновление настроек Crash игры
@@ -446,4 +460,10 @@ function loadAdminData() {
     document.getElementById('crashCommission').value = localStorage.getItem('crashCommission') || '5';
     document.getElementById('slotsRTP').value = localStorage.getItem('slotsRTP') || '95';
     document.getElementById('slotsJackpot').value = localStorage.getItem('slotsJackpot') || '1000000';
-        }
+    
+    // Загружаем начальные данные для вкладок
+    loadUsersList();
+    loadWithdrawals();
+    loadTransactions();
+    loadGameStats();
+                          }
