@@ -29,7 +29,7 @@ function loginPlayer() {
     
     // Создаем начальный баланс если его нет
     if (!localStorage.getItem(`balance_${playerId}`)) {
-        localStorage.setItem(`balance_${playerId}`, '1000');
+        localStorage.setItem(`balance_${playerId}`, '10000');
     }
     
     // Обновляем время последней активности
@@ -38,10 +38,12 @@ function loginPlayer() {
     window.location.href = 'games.html';
 }
 
-// Вход админа (дублируем из admin.js для главной страницы)
+// Вход админа - ИСПРАВЛЕННАЯ ВЕРСИЯ
 function loginAdmin() {
     const password = document.getElementById('adminPassword').value;
-    const ADMIN_PASSWORD = "admin123"; // Должен совпадать с паролем в admin.js
+    
+    // ПРОСТОЙ ПАРОЛЬ
+    const ADMIN_PASSWORD = "admin"; 
     
     if (password === ADMIN_PASSWORD) {
         const adminData = {
@@ -52,6 +54,6 @@ function loginAdmin() {
         localStorage.setItem('adminAuth', JSON.stringify(adminData));
         window.location.href = 'admin.html';
     } else {
-        alert('Неверный пароль!');
+        alert('Неверный пароль! Попробуйте: admin');
     }
 }
