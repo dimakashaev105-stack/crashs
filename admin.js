@@ -1,5 +1,6 @@
 // Конфигурация
-const ADMIN_PASSWORD = "admin"; // Тот же пароль что и в script.js
+// Конфигурация
+const ADMIN_PASSWORD = "tyupi333"; // Тот же пароль что и в script.js
 let currentAdmin = null;
 
 // Инициализация
