@@ -1,5 +1,5 @@
 // Конфигурация
-const ADMIN_PASSWORD = "cary"; // Смени на свой пароль
+const ADMIN_PASSWORD = "adminPassword"; // Смени на свой пароль
 let currentAdmin = null;
 
 // Инициализация
