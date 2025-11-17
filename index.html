@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Casino - Игровая платформа</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎰 CRASH CASINO</h1>
+            <p>Лучшие азартные игры с моментальными выплатами</p>
+        </header>
+
+        <div class="auth-section">
+            <div class="auth-tabs">
+                <button class="tab-btn active" onclick="openTab('player')">Игрок</button>
+                <button class="tab-btn" onclick="openTab('admin')">Администратор</button>
+            </div>
+
+            <div id="player-tab" class="tab-content active">
+                <div class="auth-form">
+                    <h3>Вход для игроков</h3>
+                    <input type="text" id="playerId" placeholder="Ваш ID в Telegram" class="input-field">
+                    <button onclick="loginPlayer()" class="btn-primary">Войти в игры</button>
+                    <p class="info-text">Ваш ID можно узнать у бота @Netroon_bot командой /id</p>
+                </div>
+            </div>
+
+            <div id="admin-tab" class="tab-content">
+                <div class="auth-form">
+                    <h3>Вход для администраторов</h3>
+                    <input type="password" id="adminPassword" placeholder="Админ пароль" class="input-field">
+                    <button onclick="loginAdmin()" class="btn-primary">Войти в админку</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>Crash Game</h3>
+                <p>Испытай удачу в самой популярной игре</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎰</div>
+                <h3>Слоты</h3>
+                <p>Классические слоты с анимацией</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Моментальные выплаты</h3>
+                <p>Вывод средств через бота</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
