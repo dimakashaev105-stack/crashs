@@ -78,6 +78,76 @@
         let sessionId = null;
         let gameHistory = [];
         
+        // Основная функция отправки данных боту
+        function sendToBot(data) {
+            console.log('📤 Отправка данных боту:', data);
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify(data));
+            } else {
+                console.log('⚠️ Telegram WebApp не доступен');
+                // Для тестирования без Telegram
+                simulateBotResponse(data);
+            }
+        }
+        
+        // Имитация ответа бота для тестирования
+        function simulateBotResponse(data) {
+            console.log('🧪 Тестовый режим - имитация бота');
+            if (data.action === 'get_balance') {
+                setTimeout(() => {
+                    handleBotMessage({
+                        action: 'balance_update',
+                        balance: 10000
+                    });
+                }, 500);
+            } else if (data.action === 'update_balance') {
+                setTimeout(() => {
+                    handleBotMessage({
+                        action: 'balance_updated', 
+                        balance: data.new_balance
+                    });
+                }, 500);
+            } else if (data.action === 'crash_withdraw') {
+                setTimeout(() => {
+                    handleBotMessage({
+                        action: 'withdraw_success',
+                        amount: data.amount,
+                        new_balance: 15000
+                    });
+                }, 500);
+            }
+        }
+        
+        // Функция обработки сообщений от бота
+        function handleBotMessage(messageData) {
+            try {
+                console.log('📨 Получено от бота:', messageData);
+                const data = typeof messageData === 'string' ? JSON.parse(messageData) : messageData;
+                
+                if (data.action === 'balance_update') {
+                    gameBalance = data.balance;
+                    updateBalanceInfo();
+                    hideMessages();
+                    console.log('✅ Баланс получен:', gameBalance);
+                } else if (data.action === 'balance_updated') {
+                    console.log('✅ Баланс обновлен на сервере:', data.balance);
+                } else if (data.action === 'withdraw_success') {
+                    showSuccess(`✅ Вывод ${formatBalance(data.amount)} успешен!`);
+                    gameBalance = 0;
+                    updateBalanceInfo();
+                    setTimeout(() => {
+                        if (window.Telegram && Telegram.WebApp) {
+                            Telegram.WebApp.close();
+                        }
+                    }, 2000);
+                } else if (data.action === 'error') {
+                    showError('❌ ' + data.message);
+                }
+            } catch (e) {
+                console.error('❌ Ошибка обработки сообщения:', e);
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             sessionId = urlParams.get('session_id');
@@ -87,6 +157,8 @@
                 return;
             }
             
+            console.log('🎮 Загружена сессия:', sessionId);
+            
             // Запрашиваем баланс у бота
             requestBalance();
             
@@ -94,21 +166,12 @@
                 Telegram.WebApp.ready();
                 Telegram.WebApp.expand();
                 
-                // Слушаем сообщения от бота
-                setupBotMessageListener();
+                // Настраиваем обработчик сообщений от бота
+                Telegram.WebApp.onEvent('webAppDataReceived', function(event) {
+                    console.log('📨 Событие webAppDataReceived:', event);
+                });
             }
         });
-        
-        function setupBotMessageListener() {
-            // Создаем обработчик для сообщений от бота
-            const originalSendData = Telegram.WebApp.sendData;
-            
-            // Перехватываем отправку данных для дебага
-            Telegram.WebApp.sendData = function(data) {
-                console.log('📤 Отправляем данные боту:', data);
-                return originalSendData.call(this, data);
-            };
-        }
         
         function showError(message) {
             document.getElementById('errorMessage').textContent = message;
@@ -128,20 +191,20 @@
         }
         
         function requestBalance() {
-            if (window.Telegram && Telegram.WebApp) {
-                Telegram.WebApp.sendData(JSON.stringify({
-                    action: 'get_balance',
-                    session_id: sessionId
-                }));
-                console.log('📨 Запрошен баланс для сессии:', sessionId);
-            }
+            sendToBot({
+                action: 'get_balance',
+                session_id: sessionId
+            });
             
-            // Проверяем через 3 секунды
+            // Резервный запрос через 2 секунды
             setTimeout(() => {
                 if (gameBalance === 0) {
-                    showError('❌ Не удалось загрузить баланс. Перезайдите через бота.');
+                    sendToBot({
+                        action: 'get_balance',
+                        session_id: sessionId
+                    });
                 }
-            }, 3000);
+            }, 2000);
         }
         
         function updateBalanceInfo() {
@@ -264,14 +327,11 @@
         }
         
         function updateGameBalance() {
-            if (window.Telegram && Telegram.WebApp) {
-                Telegram.WebApp.sendData(JSON.stringify({
-                    action: 'update_balance',
-                    session_id: sessionId,
-                    new_balance: gameBalance
-                }));
-                console.log('🔄 Обновлен баланс:', gameBalance);
-            }
+            sendToBot({
+                action: 'update_balance',
+                session_id: sessionId,
+                new_balance: gameBalance
+            });
         }
         
         function withdrawAll() {
@@ -286,29 +346,13 @@
             }
             
             if (confirm(`Вывести ${formatBalance(gameBalance)} на основной баланс?`)) {
-                if (window.Telegram && Telegram.WebApp) {
-                    Telegram.WebApp.sendData(JSON.stringify({
-                        action: 'crash_withdraw',
-                        session_id: sessionId,
-                        amount: gameBalance
-                    }));
-                    
-                    showSuccess(`✅ Запрос на вывод ${formatBalance(gameBalance)} отправлен!`);
-                    console.log('📤 Запрос на вывод:', gameBalance);
-                    
-                    // Обнуляем локальный баланс
-                    gameBalance = 0;
-                    updateBalanceInfo();
-                    
-                    // Закрываем WebApp через 2 секунды
-                    setTimeout(() => {
-                        if (window.Telegram && Telegram.WebApp) {
-                            Telegram.WebApp.close();
-                        }
-                    }, 2000);
-                } else {
-                    showError('❌ Ошибка связи с ботом!');
-                }
+                sendToBot({
+                    action: 'crash_withdraw',
+                    session_id: sessionId,
+                    amount: gameBalance
+                });
+                
+                showSuccess(`📤 Запрос на вывод ${formatBalance(gameBalance)} отправлен...`);
             }
         }
         
@@ -359,49 +403,10 @@
             }
         });
         
-        // Обработчик сообщений от бота
-        if (window.Telegram && Telegram.WebApp) {
-            // Слушаем входящие сообщения от бота
-            setInterval(() => {
-                // В реальном приложении здесь будет обработка сообщений через Bot API
-                // Для демо просто обновляем интерфейс
-            }, 1000);
-            
-            // Обработка данных от бота (если бот отправляет через sendMessage)
-            Telegram.WebApp.onEvent('webAppDataReceived', function(data) {
-                try {
-                    console.log('📨 Получены данные от бота:', data);
-                    // Обработка данных от бота
-                } catch (e) {
-                    console.error('Ошибка обработки данных:', e);
-                }
-            });
-        }
-        
-        // Функция для обработки сообщений от бота (вызывается извне)
-        window.handleBotMessage = function(messageText) {
-            try {
-                if (messageText && messageText.startsWith('BALANCE:')) {
-                    const data = JSON.parse(messageText.substring(8));
-                    if (data.action === 'balance_update') {
-                        gameBalance = data.balance;
-                        updateBalanceInfo();
-                        hideMessages();
-                        console.log('✅ Баланс получен:', gameBalance);
-                    }
-                }
-            } catch (e) {
-                console.error('Ошибка обработки сообщения от бота:', e);
-            }
-        };
-        
-        // Имитация получения сообщений от бота (для тестирования)
+        // Авто-запрос баланса при загрузке
         setTimeout(() => {
             if (gameBalance === 0) {
-                // Тестовый баланс
-                gameBalance = 10000;
-                updateBalanceInfo();
-                hideMessages();
+                requestBalance();
             }
         }, 1000);
         
