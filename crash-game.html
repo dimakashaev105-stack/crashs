@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Game - Crash Casino</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .balance-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .bet-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .bet-input {
+            flex: 2;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .bet-buttons {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .bet-btn {
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .game-area {
+            position: relative;
+            height: 300px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 15px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .rocket {
+            width: 60px;
+            height: 100px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            border-radius: 15px 15px 8px 8px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.1s linear;
+        }
+
+        .rocket::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 15px;
+            width: 30px;
+            height: 20px;
+            background: #ffa726;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .rocket::before {
+            content: '';
+            position: absolute;
+            bottom: -35px;
+            left: 10px;
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(to top, #ff9500, #ff0000, transparent);
+            border-radius: 50%;
+            animation: flame 0.3s infinite alternate;
+        }
+
+        @keyframes flame {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+
+        .multiplier-display {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: #4ecdc4;
+            text-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
+        }
+
+        .profit-display {
+            text-align: center;
+            font-size: 18px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            color: white;
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            color: white;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .history-list {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .history-item {
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .history-win {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .history-lose {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-message {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-playing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-crashed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-won {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🚀 CRASH GAME</h1>
+            <div class="balance-display" id="currentBalance">0₽</div>
+        </div>
+
+        <div class="bet-controls">
+            <input type="number" class="bet-input" id="betAmount" value="100" min="1">
+            <div class="bet-buttons">
+                <button class="bet-btn" onclick="setBetPercent(0.25)">25%</button>
+                <button class="bet-btn" onclick="setBetPercent(0.5)">50%</button>
+                <button class="bet-btn" onclick="setBetPercent(1)">MAX</button>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="rocket" id="rocket"></div>
+        </div>
+
+        <div class="multiplier-display" id="multiplier">1.00x</div>
+        <div class="profit-display" id="profitDisplay">Прибыль: +0₽</div>
+
+        <div class="status-message status-waiting" id="statusMessage">
+            Установите ставку и нажмите СТАРТ
+        </div>
+
+        <div class="game-controls">
+            <button class="control-btn start-btn" onclick="startGame()" id="startBtn">СТАРТ</button>
+            <button class="control-btn stop-btn" onclick="stopGame()" id="stopBtn" disabled>ВЫВЕСТИ</button>
+        </div>
+
+        <div class="history">
+            <div class="history-title">Последние игры:</div>
+            <div class="history-list" id="historyList">
+                <!-- История будет здесь -->
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="window.close()" class="btn-secondary">Закрыть игру</button>
+        </div>
+    </div>
+
+    <script>
+        let gameActive = false;
+        let currentMultiplier = 1.00;
+        let gameInterval;
+        let currentBet = 100;
+        let playerBalance = 0;
+        let playerId = null;
+        let gameHistory = [];
+
+        // Загрузка данных игрока
+        function loadPlayerData() {
+            playerId = localStorage.getItem('playerId');
+            if (!playerId) {
+                alert('Ошибка: игрок не авторизован');
+                window.close();
+                return;
+            }
+
+            playerBalance = parseInt(localStorage.getItem(`balance_${playerId}`) || '10000');
+            updateBalanceDisplay();
+            loadGameHistory();
+        }
+
+        function updateBalanceDisplay() {
+            document.getElementById('currentBalance').textContent = playerBalance.toLocaleString() + '₽';
+            document.getElementById('betAmount').max = playerBalance;
+        }
+
+        function loadGameHistory() {
+            const history = JSON.parse(localStorage.getItem(`crash_history_${playerId}`) || '[]');
+            gameHistory = history.slice(-5); // Последние 5 игр
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+
+            gameHistory.forEach(game => {
+                const item = document.createElement('div');
+                item.className = `history-item ${game.win ? 'history-win' : 'history-lose'}`;
+                item.textContent = `${game.multiplier.toFixed(2)}x`;
+                historyList.appendChild(item);
+            });
+        }
+
+        function setBetPercent(percent) {
+            if (gameActive) return;
+            
+            currentBet = Math.floor(playerBalance * percent);
+            currentBet = Math.max(1, Math.min(playerBalance, currentBet));
+            document.getElementById('betAmount').value = currentBet;
+            updateProfitDisplay();
+        }
+
+        function updateProfitDisplay() {
+            const potentialProfit = Math.floor(currentBet * currentMultiplier) - currentBet;
+            const profitText = potentialProfit >= 0 ? `+${potentialProfit.toLocaleString()}` : potentialProfit.toLocaleString();
+            document.getElementById('profitDisplay').textContent = `Прибыль: ${profitText}₽`;
+            document.getElementById('profitDisplay').style.color = potentialProfit >= 0 ? '#28a745' : '#dc3545';
+        }
+
+        function startGame() {
+            if (gameActive) return;
+
+            currentBet = parseInt(document.getElementById('betAmount').value);
+            if (!currentBet || currentBet <= 0 || currentBet > playerBalance) {
+                alert('Неверная ставка! Проверьте сумму.');
+                return;
+            }
+
+            // Списываем ставку
+            playerBalance -= currentBet;
+            localStorage.setItem(`balance_${playerId}`, playerBalance);
+            updateBalanceDisplay();
+
+            // Начинаем игру
+            gameActive = true;
+            currentMultiplier = 1.00;
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('statusMessage').className = 'status-message status-playing';
+            document.getElementById('statusMessage').textContent = '🚀 Ракета взлетает...';
+
+            const rocket = document.getElementById('rocket');
+            let position = 0;
+
+            gameInterval = setInterval(() => {
+                // Увеличиваем множитель
+                const increment = 0.01 + (Math.random() * 0.03);
+                currentMultiplier += increment;
+                
+                document.getElementById('multiplier').textContent = currentMultiplier.toFixed(2) + 'x';
+                updateProfitDisplay();
+
+                // Двигаем ракету
+                position = Math.min(180, (currentMultiplier - 1) * 25);
+                rocket.style.bottom = position + 'px';
+
+                // Шанс краша увеличивается с множителем
+                const crashChance = Math.min(0.6, (currentMultiplier - 1) * 0.05);
+                if (Math.random() < crashChance) {
+                    endGame(false);
+                }
+            }, 100);
+        }
+
+        function stopGame() {
+            if (!gameActive) return;
+            endGame(true);
+        }
+
+        function endGame(isStop) {
+            clearInterval(gameInterval);
+            gameActive = false;
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+
+            const winAmount = isStop ? Math.floor(currentBet * currentMultiplier) : 0;
+            const profit = winAmount - currentBet;
+
+            // Сохраняем в историю
+            const gameResult = {
+                win: isStop,
+                multiplier: currentMultiplier,
+                bet: currentBet,
+                profit: profit,
+                timestamp: Date.now()
+            };
+
+            gameHistory.push(gameResult);
+            if (gameHistory.length > 5) gameHistory.shift();
+            localStorage.setItem(`crash_history_${playerId}`, JSON.stringify(gameHistory));
+
+            if (isStop) {
+                // Выигрыш
+                playerBalance += winAmount;
+                document.getElementById('statusMessage').className = 'status-message status-won';
+                document.getElementById('statusMessage').textContent = `✅ Успех! Вывели на ${currentMultiplier.toFixed(2)}x`;
+                
+                // Записываем транзакцию
+                recordTransaction('game_win', winAmount, `Crash game win x${currentMultiplier.toFixed(2)}`);
+            } else {
+                // Проигрыш
+                document.getElementById('statusMessage').className = 'status-message status-crashed';
+                document.getElementById('statusMessage').textContent = `💥 Краш на ${currentMultiplier.toFixed(2)}x`;
+                
+                // Записываем транзакцию
+                recordTransaction('game_loss', -currentBet, `Crash game loss`);
+            }
+
+            // Обновляем баланс
+            localStorage.setItem(`balance_${playerId}`, playerBalance);
+            updateBalanceDisplay();
+            updateHistoryDisplay();
+
+            // Сбрасываем игру через 3 секунды
+            setTimeout(() => {
+                document.getElementById('rocket').style.bottom = '0px';
+                document.getElementById('multiplier').textContent = '1.00x';
+                document.getElementById('statusMessage').className = 'status-message status-waiting';
+                document.getElementById('statusMessage').textContent = 'Установите ставку и нажмите СТАРТ';
+                currentMultiplier = 1.00;
+                updateProfitDisplay();
+            }, 3000);
+        }
+
+        function recordTransaction(type, amount, description) {
+            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            
+            transactions.push({
+                userId: playerId,
+                type: type,
+                amount: amount,
+                description: description,
+                timestamp: Date.now()
+            });
+            
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        // Обработчики событий
+        document.getElementById('betAmount').addEventListener('input', function() {
+            if (!gameActive) {
+                currentBet = parseInt(this.value) || 0;
+                currentBet = Math.max(1, Math.min(playerBalance, currentBet));
+                this.value = currentBet;
+                updateProfitDisplay();
+            }
+        });
+
+        // Загрузка при старте
+        document.addEventListener('DOMContentLoaded', loadPlayerData);
+    </script>
+</body>
+</html>
