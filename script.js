@@ -37,23 +37,21 @@ function loginPlayer() {
     
     window.location.href = 'games.html';
 }
-
-// Вход админа - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Вход админа - ПРОСТОЙ ПАРОЛЬ
 function loginAdmin() {
     const password = document.getElementById('adminPassword').value;
     
-    // ПРОСТОЙ ПАРОЛЬ
-    const ADMIN_PASSWORD = "admin"; 
-    
-    if (password === ADMIN_PASSWORD) {
+    // ИЗМЕНИ ЭТУ СТРОЧКУ - напиши свой пароль внутри кавычек
+    if (password === "tyupi333") {
         const adminData = {
-            name: "Главный администратор",
+            name: "Администратор",
             loginTime: new Date().toISOString()
         };
         
         localStorage.setItem('adminAuth', JSON.stringify(adminData));
         window.location.href = 'admin.html';
     } else {
-        alert('Неверный пароль! Попробуйте: admin');
+        alert('Неверный пароль!');
     }
 }
+
